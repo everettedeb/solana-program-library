@@ -2,7 +2,7 @@ name: Fuzz Nightly
 
 on:
   schedule:
-    - cron:  '0 3 * * *'
+    - cron: '0 3 * * *'
 
 jobs:
   fuzz-nightly:
@@ -12,44 +12,51 @@ jobs:
         fuzz_target: [token-swap-instructions]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v3
 
-      - name: Set env vars
+      - name: Set environment variables
         run: |
           source ci/rust-version.sh
           echo "RUST_STABLE=$rust_stable" >> $GITHUB_ENV
           source ci/solana-version.sh
           echo "SOLANA_VERSION=$solana_version" >> $GITHUB_ENV
 
-      - uses: actions-rs/toolchain@v1
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ env.RUST_STABLE }}
           override: true
           profile: minimal
 
-      - uses: actions/cache@v2
+      - name: Cache Rust dependencies
+        uses: actions/cache@v2
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
           key: cargo-fuzz-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-fuzz-
 
-      - uses: actions/cache@v2
+      - name: Cache fuzzing tools
+        uses: actions/cache@v2
         with:
           path: |
             ~/.cargo/bin/cargo-hfuzz
             ~/.cargo/bin/cargo-honggfuzz
           key: cargo-fuzz-bins-${{ runner.os }}
 
-      - uses: actions/cache@v2
+      - name: Cache Solana dependencies
+        uses: actions/cache@v2
         with:
           path: ~/.cache/solana
           key: solana-${{ env.SOLANA_VERSION }}
           restore-keys: |
             solana-
 
-      - name: Install dependencies
+      - name: Install build and program dependencies
         run: |
           ./ci/install-build-deps.sh
           ./ci/install-program-deps.sh
